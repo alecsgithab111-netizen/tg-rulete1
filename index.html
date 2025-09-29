@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Gifts Battle</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0a0a0a;
+            color: white;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 400px;
+            margin: 0 auto;
+            padding: 60px 0 70px;
+        }
+        
+        /* Шапка */
+        .header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: #1a1a1a;
+            padding: 15px;
+            z-index: 1000;
+            border-bottom: 1px solid #333;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .back-button {
+            font-size: 20px;
+            cursor: pointer;
+        }
+        
+        .balance {
+            font-size: 18px;
+            font-weight: bold;
+        }
+        
+        .connect-wallet {
+            background: #0088cc;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 15px;
+            font-size: 12px;
+            cursor: pointer;
+        }
+        
+        /* Контент */
+        .page {
+            display: none;
+            padding: 20px;
+        }
+        
+        .page.active {
+            display: block;
+        }
+        
+        /* Страница подключения кошелька */
+        .wallet-connect-page {
+            text-align: center;
+        }
+        
+        .wallet-title {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        
+        .wallet-subtitle {
+            color: #888;
+            margin-bottom: 30px;
+            font-size: 16px;
+        }
+        
+        .wallet-options {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+        
+        .wallet-main-option {
+            background: #1a1a1a;
+            border-radius: 15px;
+            padding: 20px;
+            border: 2px solid #333;
+            cursor: pointer;
+            transition: border-color 0.3s;
+        }
+        
+        .wallet-main-option:hover {
+            border-color: #0088cc;
+        }
+        
+        .wallet-icon-large {
+            font-size: 40px;
+            margin-bottom: 10px;
+        }
+        
+        .wallet-name {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .other-apps-section {
+            margin-top: 30px;
+        }
+        
+        .section-title {
+            font-size: 16px;
+            color: #888;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+        
+        .other-wallets-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+        
+        .other-wallet-option {
+            background: #1a1a1a;
+            border-radius: 12px;
+            padding: 15px;
+            text-align: center;
+            cursor: pointer;
+            border: 1px solid #333;
+            transition: border-color 0.3s;
+        }
+        
+        .other-wallet-option:hover {
+            border-color: #0088cc;
+        }
+        
+        .other-wallet-icon {
+            font-size: 24px;
+            margin-bottom: 8px;
+        }
+        
+        .other-wallet-name {
+            font-size: 14px;
+            font-weight: 500;
+        }
+        
+        /* Loading */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+        }
+        
+        .loading-content {
+            background: #1a1a1a;
+            padding: 30px;
+            border-radius: 15px;
+            text-align: center;
+        }
+        
+        .loading-spinner {
+            font-size: 40px;
+            margin-bottom: 15px;
+        }
+        
+        /* Кейсы */
+        .cases-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin-top: 20px;
+        }
+        
+        .case-item {
+            background: #1a1a1a;
+            border-radius: 15px;
+            padding: 20px;
+            text-align: center;
+            border: 2px solid #333;
+            cursor: pointer;
+        }
+        
+        .case-name {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        
+        .case-price {
+            background: #0088cc;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: bold;
+        }
+        
+        .free-case {
+            border-color: gold;
+        }
+        
+        .free-badge {
+            background: gold;
+            color: black;
+            padding: 5px 10px;
+            border-radius: 10px;
+            font-size: 12px;
+            margin-bottom: 10px;
+            display: inline-block;
+        }
+        
+        .timer {
+            font-size: 14px;
+            color: #888;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Шапка -->
+    <div class="header">
+        <div class="back-button" onclick="goBack()" style="display: none;">←</div>
+        <div class="balance">⭐ <span id="starBalance">0</span></div>
+        <button class="connect-wallet" onclick="showWalletConnect()" id="walletButton">
+            Подключить кошелек
+        </button>
+    </div>
+
+    <!-- Основной контент -->
+    <div class="container">
+        <!-- Главная страница с кейсами -->
+        <div id="mainPage" class="page active">
+            <h2>🎁 Кейсы</h2>
+            <div class="cases-grid">
+                <div class="case-item free-case" onclick="showCaseContents('free')">
+                    <div class="free-badge">БЕСПЛАТНО</div>
+                    <div class="case-name">БЕСПЛАТНЫЙ КЕЙС</div>
+                    <div class="case-price">0 ⭐</div>
+                    <div class="timer" id="freeTimer">Доступно сейчас!</div>
+                </div>
+                
+                <div class="case-item" onclick="showCaseContents('paid')">
+                    <div class="case-name">ПРЕМИУМ КЕЙС</div>
+                    <div class="case-price">30 ⭐</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Страница подключения кошелька -->
+        <div id="walletConnectPage" class="page wallet-connect-page">
+            <div class="wallet-title">Connect your TON wallet</div>
+            <div class="wallet-subtitle">Use Wallet in Telegram or choose other application</div>
+            
+            <div class="wallet-options">
+                <!-- Основной вариант - Telegram Wallet -->
+                <div class="wallet-main-option" onclick="connectTelegramWallet()">
+                    <div class="wallet-icon-large">✈️</div>
+                    <div class="wallet-name">Connect Wallet in Telegram</div>
+                </div>
+            </div>
+            
+            <div class="other-apps-section">
+                <div class="section-title">Choose other application</div>
+                <div class="other-wallets-grid">
+                    <div class="other-wallet-option" onclick="connectTonkeeper()">
+                        <div class="other-wallet-icon">🦊</div>
+                        <div class="other-wallet-name">Tonkeeper</div>
+                    </div>
+                    
+                    <div class="other-wallet-option" onclick="connectTonhub()">
+                        <div class="other-wallet-icon">📱</div>
+                        <div class="other-wallet-name">Tonhub</div>
+                    </div>
+                    
+                    <div class="other-wallet-option" onclick="connectMyTonWallet()">
+                        <div class="other-wallet-icon">👑</div>
+                        <div class="other-wallet-name">MyTonWallet</div>
+                    </div>
+                    
+                    <div class="other-wallet-option" onclick="connectOpenMask()">
+                        <div class="other-wallet-icon">🎭</div>
+                        <div class="other-wallet-name">OpenMask</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Остальные страницы (кейсы, пополнение и т.д.) -->
+        <!-- ... остальной код страниц ... -->
+    </div>
+
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-content">
+            <div class="loading-spinner">⏳</div>
+            <div>Connecting to wallet...</div>
+            <div style="font-size: 12px; color: #888; margin-top: 10px;">You will be redirected to the wallet app</div>
+        </div>
+    </div>
+
+    <script>
+        // Функции для реального подключения кошельков
+        function connectTelegramWallet() {
+            showLoading();
+            // Telegram Wallet deeplink
+            const deeplink = "tg://wallet?start=connect";
+            const fallback = "https://t.me/wallet?start=connect";
+            
+            openWalletApp(deeplink, fallback, "Telegram Wallet");
+        }
+
+        function connectTonkeeper() {
+            showLoading();
+            // Tonkeeper deeplink для подключения
+            const deeplink = "tonkeeper://connect?url=" + encodeURIComponent(window.location.href);
+            const fallback = "https://tonkeeper.com";
+            
+            openWalletApp(deeplink, fallback, "Tonkeeper");
+        }
+
+        function connectTonhub() {
+            showLoading();
+            // Tonhub deeplink
+            const deeplink = "tonhub://connect?url=" + encodeURIComponent(window.location.href);
+            const fallback = "https://tonhub.com";
+            
+            openWalletApp(deeplink, fallback, "Tonhub");
+        }
+
+        function connectMyTonWallet() {
+            showLoading();
+            // MyTonWallet deeplink
+            const deeplink = "mytonwallet://connect?url=" + encodeURIComponent(window.location.href);
+            const fallback = "https://mytonwallet.io";
+            
+            openWalletApp(deeplink, fallback, "MyTonWallet");
+        }
+
+        function connectOpenMask() {
+            showLoading();
+            // OpenMask deeplink
+            const deeplink = "openmask://connect?url=" + encodeURIComponent(window.location.href);
+            const fallback = "https://openmask.io";
+            
+            openWalletApp(deeplink, fallback, "OpenMask");
+        }
+
+        // Универсальная функция открытия кошелька
+        function openWalletApp(deeplink, fallback, walletName) {
+            // Пытаемся открыть deeplink
+            window.location.href = deeplink;
+            
+            // Если deeplink не сработал, через 2 секунды открываем fallback
+            setTimeout(() => {
+                if (!document.hidden) {
+                    hideLoading();
+                    const install = confirm(`${walletName} not found. Would you like to install it?`);
+                    if (install) {
+                        window.open(fallback, '_blank');
+                    }
+                }
+            }, 2000);
+        }
+
+        // Показать/скрыть loading
+        function showLoading() {
+            document.getElementById('loadingOverlay').style.display = 'flex';
+        }
+
+        function hideLoading() {
+            document.getElementById('loadingOverlay').style.display = 'none';
+        }
+
+        // Обработка возврата из кошелька (пример)
+        function handleWalletConnection() {
+            // Здесь будет логика обработки успешного подключения
+            // когда пользователь вернется из кошелька
+            
+            const urlParams = new URLSearchParams(window.location.search);
+            const connected = urlParams.get('connected');
+            
+            if (connected === 'true') {
+                // Симуляция успешного подключения
+                setTimeout(() => {
+                    hideLoading();
+                    alert('✅ Wallet connected successfully!');
+                    updateWalletStatus(true);
+                    showPage('mainPage');
+                }, 1000);
+            }
+        }
+
+        // Обновление статуса кошелька
+        function updateWalletStatus(connected) {
+            const walletButton = document.getElementById('walletButton');
+            if (connected) {
+                walletButton.textContent = '✅ Кошелек';
+                walletButton.style.background = '#27ae60';
+            } else {
+                walletButton.textContent = 'Подключить кошелек';
+                walletButton.style.background = '#0088cc';
+            }
+        }
+
+        // Навигация
+        function showPage(page) {
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+            document.getElementById(page).classList.add('active');
+            
+            const backButton = document.querySelector('.back-button');
+            if (page === 'mainPage') {
+                backButton.style.display = 'none';
+            } else {
+                backButton.style.display = 'block';
+            }
+            
+            currentPage = page;
+        }
+
+        function showWalletConnect() {
+            navigateTo('walletConnectPage');
+        }
+
+        function goBack() {
+            if (pageHistory.length > 0) {
+                const prevPage = pageHistory.pop();
+                showPage(prevPage);
+            } else {
+                showPage('mainPage');
+            }
+        }
+
+        function navigateTo(page) {
+            pageHistory.push(currentPage);
+            showPage(page);
+        }
+
+        // Инициализация
+        let currentPage = 'mainPage';
+        let pageHistory = [];
+
+        // Проверить подключение при загрузке
+        document.addEventListener('DOMContentLoaded', function() {
+            handleWalletConnection();
+        });
+
+        // Остальные функции для кейсов...
+        function showCaseContents(caseType) {
+            // Заглушка для демонстрации
+            alert('Просмотр содержимого кейса ' + caseType);
+        }
+    </script>
+</body>
+</html>
